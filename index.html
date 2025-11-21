@@ -3,38 +3,507 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Miku Finance Manager</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Mirai Kiroku (未来記録) - Manajemen Keuangan (Miku & Len Theme)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f8ff; /* Light, airy background */
+            /* Subtle theme background pattern */
+            background-image: repeating-linear-gradient(45deg, #e0ffff 0, #e0ffff 1px, transparent 0, transparent 50%);
+            background-size: 8px 8px;
+        }
+        /* Custom scrollbar for transaction list */
+        #transaction-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        #transaction-list::-webkit-scrollbar-thumb {
+            background: #a5f3fc; /* cyan-200 */
+            border-radius: 3px;
+        }
+        #transaction-list::-webkit-scrollbar-thumb:hover {
+            background: #67e8f9; /* cyan-400 */
+        }
+    </style>
 </head>
-<body>
+<body class="antialiased">
 
-    <header>
-        <img src="https://i.imgur.com/q2dX7yM.png" class="miku-chibi">
-        <h1>Miku Finance Manager</h1>
-        <p class="subtitle">“Let's manage your money ~ 私に任せてね!”</p>
+    <!-- Header (Miku Theme - Cyan) -->
+    <header class="bg-cyan-500 text-white p-4 shadow-xl shadow-cyan-800/30 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-3xl font-extrabold flex items-center mb-2 sm:mb-0 transform transition-transform hover:scale-[1.02] duration-300">
+                <i data-lucide="wallet" class="w-7 h-7 mr-2 animate-pulse"></i>
+                未来記録 (Mirai Kiroku)
+                <span class="ml-2 text-base font-medium opacity-80">(VocaLedger)</span>
+            </h1>
+            <div class="text-right text-sm">
+                <p class="font-semibold mb-1">Akun ID Anda:</p>
+                <code id="user-id-display" class="bg-cyan-600 p-1 px-3 rounded-lg text-xs break-all shadow-inner shadow-cyan-900/50">
+                    Memuat...
+                </code>
+            </div>
+        </div>
     </header>
 
-    <div class="container">
-        <div class="balance">
-            <h2>Total Saldo</h2>
-            <h3 id="balance">Rp 0</h3>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <!-- Summary Cards -->
+        <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Cards will be injected here -->
         </div>
 
-        <div class="input-section">
-            <input type="text" id="desc" placeholder="Deskripsi">
-            <input type="number" id="amount" placeholder="Jumlah">
-            <select id="type">
-                <option value="income">Pemasukan</option>
-                <option value="expense">Pengeluaran</option>
-            </select>
-            <button onclick="addTransaction()">Tambah</button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Add Transaction Form (Column 1) -->
+            <div class="lg:col-span-1">
+                <div class="p-6 bg-white rounded-xl shadow-2xl border border-gray-100">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <i data-lucide="plus-circle" class="w-6 h-6 mr-2 text-cyan-600"></i>
+                        Tambah Transaksi Baru
+                    </h2>
+                    <form id="transaction-form">
+                        
+                        <!-- Type Selector -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis</label>
+                            <div class="flex space-x-4 p-1 bg-gray-100 rounded-lg">
+                                <button type="button" id="type-income" data-type="Income" class="flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-green-500 text-white shadow-md">
+                                    Pemasukan
+                                </button>
+                                <button type="button" id="type-expense" data-type="Expense" class="flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-transparent text-gray-700 hover:bg-white">
+                                    Pengeluaran
+                                </button>
+                            </div>
+                            <input type="hidden" id="transaction-type" name="type" value="Expense" required>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- Amount -->
+                            <div>
+                                <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah (IDR)</label>
+                                <input id="amount" name="amount" type="number" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="Cth: 500000" required>
+                            </div>
+
+                            <!-- Date -->
+                            <div>
+                                <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                                <input id="date" name="date" type="date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" required>
+                            </div>
+
+                            <!-- Category -->
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                                <select id="category" name="category" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 bg-white" required>
+                                    <option value="" disabled selected>Pilih Kategori</option>
+                                </select>
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi (Opsional)</label>
+                                <input id="description" name="description" type="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="Cth: Makan siang di kantor">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="submit-btn" class="mt-6 w-full py-3 px-4 bg-cyan-600 text-white font-semibold rounded-xl shadow-lg hover:bg-cyan-700 transition duration-200 disabled:opacity-50 flex items-center justify-center">
+                            Simpan Transaksi
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Transaction History (Column 2-3) -->
+            <div class="lg:col-span-2">
+                <div class="bg-white p-6 rounded-xl shadow-2xl border border-gray-100">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Riwayat Transaksi Terbaru</h2>
+                    <div id="loading-indicator" class="text-center text-gray-500 py-8 hidden">
+                        Memuat riwayat...
+                    </div>
+                    <div id="transaction-list" class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                        <!-- Transactions will be injected here -->
+                        <p id="no-transactions" class="text-center text-gray-500 py-8 hidden">Belum ada transaksi yang dicatat. Mulailah menambahkan!</p>
+                    </div>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <h2 class="history-title">Riwayat Transaksi</h2>
-        <ul id="transaction-list"></ul>
-    </div>
+    <footer class="p-4 text-center text-sm text-gray-500 mt-10">
+        <p>Data disimpan di Firestore pribadi Anda, terikat pada Akun ID di atas. Theme inspired by Hatsune Miku and Kagamine Len.</p>
+    </footer>
 
+
+    <!-- Firebase and Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            addDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot, 
+            serverTimestamp,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- GLOBAL CONFIGS & VARIABLES (Provided by Canvas) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let currentUserId = null;
+        let isAuthReady = false;
+
+        // Transaction Categories
+        const categories = {
+            Income: ['Gaji', 'Bonus', 'Investasi', 'Lainnya'],
+            Expense: ['Makanan & Minuman', 'Transportasi', 'Tagihan', 'Hiburan', 'Belanja', 'Lainnya']
+        };
+
+        // DOM Elements
+        const userIdDisplay = document.getElementById('user-id-display');
+        const summaryCards = document.getElementById('summary-cards');
+        const transactionForm = document.getElementById('transaction-form');
+        const transactionListContainer = document.getElementById('transaction-list');
+        const transactionTypeInput = document.getElementById('transaction-type');
+        const categorySelect = document.getElementById('category');
+        const incomeBtn = document.getElementById('type-income');
+        const expenseBtn = document.getElementById('type-expense');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const noTransactionsMsg = document.getElementById('no-transactions');
+
+
+        // --- UTILITY FUNCTIONS ---
+
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+            }).format(amount);
+        };
+
+        const getTransactionPath = (userId) => {
+            return `artifacts/${appId}/users/${userId}/financial_transactions`;
+        };
+
+        // --- FIREBASE INITIALIZATION & AUTHENTICATION ---
+
+        const initializeFirebase = async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug'); // Enable Firestore logging
+
+                // 1. Set up Auth State Listener
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        userIdDisplay.textContent = currentUserId;
+                    } else {
+                        currentUserId = null;
+                        userIdDisplay.textContent = 'Anonim';
+                    }
+                    isAuthReady = true;
+                    // Start listening to data once auth is ready
+                    if (currentUserId) {
+                        listenToTransactions(currentUserId);
+                    }
+                });
+
+                // 2. Initial Sign-in Attempt
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } catch (error) {
+                        console.warn("Custom token sign-in failed, falling back to anonymous.", error);
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                isAuthReady = true; // Mark as ready even on failure
+            }
+        };
+
+
+        // --- RENDER FUNCTIONS ---
+
+        const renderSummaryCards = (income, expense, balance) => {
+            const cardsHtml = `
+                ${createSummaryCard('Total Saldo', balance, 'balance')}
+                ${createSummaryCard('Total Pemasukan', income, 'income')}
+                ${createSummaryCard('Total Pengeluaran', expense, 'expense')}
+            `;
+            summaryCards.innerHTML = cardsHtml;
+            lucide.createIcons(); // Re-render icons after DOM update
+        };
+
+        const createSummaryCard = (title, value, type) => {
+            let icon = 'wallet';
+            // Len's Yellow/Amber Theme for Balance Card
+            let colorClass = 'text-amber-700 bg-amber-200'; 
+
+            if (type === 'income') {
+                icon = 'trending-up';
+                colorClass = 'text-green-600 bg-green-100';
+            } else if (type === 'expense') {
+                icon = 'trending-down';
+                colorClass = 'text-red-600 bg-red-100';
+            }
+
+            return `
+                <div class="bg-white p-6 rounded-xl shadow-xl border border-gray-100 transition duration-300 hover:shadow-2xl">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full mb-3 ${colorClass}">
+                        <i data-lucide="${icon}" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-sm font-medium text-gray-500 mb-1">${title}</p>
+                    <p class="text-2xl font-extrabold text-gray-900 truncate">
+                        ${formatCurrency(value)}
+                    </p>
+                </div>
+            `;
+        };
+
+        const renderTransactionList = (transactions) => {
+            transactionListContainer.innerHTML = '';
+
+            if (transactions.length === 0) {
+                noTransactionsMsg.classList.remove('hidden');
+                return;
+            }
+            noTransactionsMsg.classList.add('hidden');
+
+            transactions.forEach(t => {
+                const isIncome = t.type === 'Income';
+                // Use a brighter shade for transactions
+                const colorClass = isIncome ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
+                const textClass = isIncome ? 'text-green-700' : 'text-red-700';
+                const icon = isIncome ? 'trending-up' : 'trending-down';
+
+                const transactionItem = document.createElement('div');
+                transactionItem.className = `flex items-center justify-between p-4 rounded-xl shadow-md transition duration-200 ${colorClass} border-l-4`;
+                transactionItem.setAttribute('data-id', t.id);
+
+                transactionItem.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <i data-lucide="${icon}" class="w-4 h-4 ${textClass}"></i>
+                            <p class="font-semibold text-gray-800 truncate">${t.description || t.category}</p>
+                        </div>
+                        <p class="text-sm text-gray-500 ml-6 truncate">
+                            ${t.category} &middot; ${t.date}
+                        </p>
+                    </div>
+                    <div class="text-right ml-4">
+                        <p class="font-bold ${textClass}">
+                            ${formatCurrency(t.amount)}
+                        </p>
+                    </div>
+                    <button
+                        class="ml-4 p-2 text-gray-400 hover:text-red-500 transition duration-150 rounded-full delete-btn"
+                        aria-label="Delete transaction"
+                        data-id="${t.id}"
+                    >
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                `;
+
+                transactionListContainer.appendChild(transactionItem);
+            });
+
+            lucide.createIcons(); // Re-render icons
+        };
+
+        // --- DATA LOGIC (Firestore) ---
+
+        const listenToTransactions = (userId) => {
+            if (!db || !userId) return;
+
+            loadingIndicator.classList.remove('hidden');
+            const path = getTransactionPath(userId);
+            const q = query(collection(db, path));
+
+            // onSnapshot provides real-time updates
+            onSnapshot(q, (querySnapshot) => {
+                const fetchedTransactions = [];
+                let totalIncome = 0;
+                let totalExpense = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const transaction = {
+                        id: doc.id,
+                        type: data.type,
+                        amount: data.amount || 0,
+                        category: data.category || 'Uncategorized',
+                        description: data.description || '',
+                        date: data.date || new Date().toISOString().split('T')[0],
+                        createdAt: data.createdAt?.toDate() || new Date(),
+                    };
+                    fetchedTransactions.push(transaction);
+
+                    if (transaction.type === 'Income') {
+                        totalIncome += transaction.amount;
+                    } else if (transaction.type === 'Expense') {
+                        totalExpense += transaction.amount;
+                    }
+                });
+
+                // Sort by creation time (newest first)
+                fetchedTransactions.sort((a, b) => b.createdAt - a.createdAt);
+                
+                // Update UI
+                renderSummaryCards(totalIncome, totalExpense, totalIncome - totalExpense);
+                renderTransactionList(fetchedTransactions);
+                loadingIndicator.classList.add('hidden');
+            }, (error) => {
+                console.error("Error fetching transactions: ", error);
+                loadingIndicator.classList.add('hidden');
+            });
+        };
+
+        const addTransaction = async (data) => {
+            if (!db || !currentUserId) {
+                console.error("Database or User ID not ready.");
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+
+            try {
+                const path = getTransactionPath(currentUserId);
+                await addDoc(collection(db, path), {
+                    type: data.type,
+                    amount: parseFloat(data.amount),
+                    category: data.category,
+                    description: data.description,
+                    date: data.date,
+                    createdAt: serverTimestamp(),
+                });
+
+                // Clear form fields
+                document.getElementById('amount').value = '';
+                document.getElementById('description').value = '';
+                // Keep the current type/category selection for convenience
+                
+            } catch (error) {
+                console.error("Error adding document: ", error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Simpan Transaksi';
+            }
+        };
+
+        const deleteTransaction = async (id) => {
+            if (!db || !currentUserId) return;
+            
+            try {
+                const path = getTransactionPath(currentUserId);
+                const docRef = doc(db, path, id);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("Error deleting transaction: ", error);
+            }
+        };
+
+
+        // --- EVENT HANDLERS ---
+
+        const updateCategoryOptions = (type) => {
+            categorySelect.innerHTML = '<option value="" disabled selected>Pilih Kategori</option>';
+            categories[type].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categorySelect.appendChild(option);
+            });
+        };
+        
+        const handleTypeChange = (selectedType) => {
+            const isIncome = selectedType === 'Income';
+            transactionTypeInput.value = selectedType;
+            
+            // Update button styles
+            incomeBtn.className = isIncome 
+                ? 'flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-green-500 text-white shadow-md' 
+                : 'flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-transparent text-gray-700 hover:bg-white';
+            
+            expenseBtn.className = isIncome 
+                ? 'flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-transparent text-gray-700 hover:bg-white'
+                : 'flex-1 p-3 text-center rounded-lg font-medium transition duration-200 bg-red-500 text-white shadow-md';
+            
+            updateCategoryOptions(selectedType);
+        };
+
+        // --- SETUP LISTENERS ---
+
+        window.onload = () => {
+            // Set default date to today
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            // Initial category population
+            handleTypeChange(transactionTypeInput.value); 
+
+            // Initialize Firebase and start listening for auth state
+            initializeFirebase();
+
+            // Type Button Listeners
+            incomeBtn.addEventListener('click', () => handleTypeChange('Income'));
+            expenseBtn.addEventListener('click', () => handleTypeChange('Expense'));
+
+            // Form Submission Listener
+            transactionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(transactionForm);
+                const data = {};
+                formData.forEach((value, key) => { data[key] = value; });
+
+                if (!data.amount || !data.category) {
+                    console.error("Jumlah dan Kategori wajib diisi.");
+                    return; 
+                }
+
+                if (parseFloat(data.amount) <= 0) {
+                     console.error("Jumlah harus berupa angka positif.");
+                    return;
+                }
+                
+                addTransaction(data);
+            });
+
+            // Delete Button Listener (Event Delegation)
+            transactionListContainer.addEventListener('click', (e) => {
+                const deleteButton = e.target.closest('.delete-btn');
+                if (deleteButton) {
+                    const id = deleteButton.getAttribute('data-id');
+                    if (id) {
+                        deleteTransaction(id);
+                    }
+                }
+            });
+        };
+    </script>
 </body>
-
-<script src="app.js"></script>
 </html>

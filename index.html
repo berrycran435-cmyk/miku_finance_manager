@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mirai Kiroku (未来記録) - Manajemen Keuangan (Miku & Len Theme)</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <!-- Load Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
@@ -29,11 +26,31 @@
         #transaction-list::-webkit-scrollbar-thumb:hover {
             background: #67e8f9; /* cyan-400 */
         }
+        /* Style untuk Toast Container */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast-enter {
+            animation: slideIn 0.5s forwards;
+        }
+        .toast-exit {
+            animation: slideOut 0.5s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
     </style>
 </head>
 <body class="antialiased">
 
-    <!-- Header (Miku Theme - Cyan) -->
     <header class="bg-cyan-500 text-white p-4 shadow-xl shadow-cyan-800/30 sticky top-0 z-10">
         <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
             <h1 class="text-3xl font-extrabold flex items-center mb-2 sm:mb-0 transform transition-transform hover:scale-[1.02] duration-300">
@@ -50,17 +67,13 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         
-        <!-- Summary Cards -->
         <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Cards will be injected here -->
-        </div>
+            </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- Add Transaction Form (Column 1) -->
             <div class="lg:col-span-1">
                 <div class="p-6 bg-white rounded-xl shadow-2xl border border-gray-100">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
@@ -69,7 +82,6 @@
                     </h2>
                     <form id="transaction-form">
                         
-                        <!-- Type Selector -->
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Jenis</label>
                             <div class="flex space-x-4 p-1 bg-gray-100 rounded-lg">
@@ -84,19 +96,16 @@
                         </div>
 
                         <div class="grid grid-cols-1 gap-4">
-                            <!-- Amount -->
                             <div>
                                 <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Jumlah (IDR)</label>
                                 <input id="amount" name="amount" type="number" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="Cth: 500000" required>
                             </div>
 
-                            <!-- Date -->
                             <div>
                                 <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
                                 <input id="date" name="date" type="date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" required>
                             </div>
 
-                            <!-- Category -->
                             <div>
                                 <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
                                 <select id="category" name="category" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500 bg-white" required>
@@ -104,7 +113,6 @@
                                 </select>
                             </div>
 
-                            <!-- Description -->
                             <div>
                                 <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi (Opsional)</label>
                                 <input id="description" name="description" type="text" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-cyan-500 focus:border-cyan-500" placeholder="Cth: Makan siang di kantor">
@@ -118,7 +126,6 @@
                 </div>
             </div>
 
-            <!-- Transaction History (Column 2-3) -->
             <div class="lg:col-span-2">
                 <div class="bg-white p-6 rounded-xl shadow-2xl border border-gray-100">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Riwayat Transaksi Terbaru</h2>
@@ -126,20 +133,21 @@
                         Memuat riwayat...
                     </div>
                     <div id="transaction-list" class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                        <!-- Transactions will be injected here -->
                         <p id="no-transactions" class="text-center text-gray-500 py-8 hidden">Belum ada transaksi yang dicatat. Mulailah menambahkan!</p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+    
+    <div id="toast-container">
+        </div>
 
     <footer class="p-4 text-center text-sm text-gray-500 mt-10">
         <p>Data disimpan di Firestore pribadi Anda, terikat pada Akun ID di atas. Theme inspired by Hatsune Miku and Kagamine Len.</p>
     </footer>
 
 
-    <!-- Firebase and Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
@@ -186,7 +194,7 @@
         const expenseBtn = document.getElementById('type-expense');
         const loadingIndicator = document.getElementById('loading-indicator');
         const noTransactionsMsg = document.getElementById('no-transactions');
-
+        const toastContainer = document.getElementById('toast-container'); // BARU
 
         // --- UTILITY FUNCTIONS ---
 
@@ -201,6 +209,46 @@
         const getTransactionPath = (userId) => {
             return `artifacts/${appId}/users/${userId}/financial_transactions`;
         };
+        
+        // FUNGSI BARU: TOAST NOTIFICATION
+        const showToast = (message, type = 'success') => {
+            let bgColor = 'bg-green-500';
+            let iconHtml = '<i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>';
+
+            if (type === 'error') {
+                bgColor = 'bg-red-500';
+                iconHtml = '<i data-lucide="x-circle" class="w-5 h-5 mr-2"></i>';
+            }
+            
+            if (type === 'info') {
+                bgColor = 'bg-cyan-500';
+                iconHtml = '<i data-lucide="info" class="w-5 h-5 mr-2"></i>';
+            }
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 mt-2 max-w-sm w-full text-white ${bgColor} rounded-lg shadow-xl toast-enter`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    ${iconHtml}
+                    <p class="font-medium">${message}</p>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toast);
+            lucide.createIcons(); // Render icon Lucide
+
+            // Hilangkan toast setelah 3 detik
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                
+                // Hapus elemen dari DOM setelah animasi selesai
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        };
+
 
         // --- FIREBASE INITIALIZATION & AUTHENTICATION ---
 
@@ -241,6 +289,7 @@
 
             } catch (error) {
                 console.error("Firebase initialization failed:", error);
+                showToast("Gagal menginisialisasi Firebase. Cek konsol.", 'error'); // MENGGANTI ALERT
                 isAuthReady = true; // Mark as ready even on failure
             }
         };
@@ -343,7 +392,7 @@
             const path = getTransactionPath(userId);
             const q = query(collection(db, path));
 
-            // onSnapshot provides real-time updates
+            // onSnapshot provides real-time updates (FITUR REALTIME)
             onSnapshot(q, (querySnapshot) => {
                 const fetchedTransactions = [];
                 let totalIncome = 0;
@@ -378,13 +427,15 @@
                 loadingIndicator.classList.add('hidden');
             }, (error) => {
                 console.error("Error fetching transactions: ", error);
+                showToast("Gagal memuat transaksi. Coba periksa koneksi Anda.", 'error'); // MENGGANTI ALERT
                 loadingIndicator.classList.add('hidden');
             });
         };
 
         const addTransaction = async (data) => {
             if (!db || !currentUserId) {
-                console.error("Database or User ID not ready.");
+                console.error("Database atau User ID belum siap.");
+                showToast("Sistem belum siap. Coba ulangi sebentar lagi.", 'error');
                 return;
             }
 
@@ -403,13 +454,16 @@
                     createdAt: serverTimestamp(),
                 });
 
+                // TAMPILKAN TOAST SUKSES (PENGGANTI ALERT)
+                showToast(`Transaksi ${data.type} sebesar ${formatCurrency(data.amount)} berhasil disimpan.`, 'success');
+
                 // Clear form fields
                 document.getElementById('amount').value = '';
                 document.getElementById('description').value = '';
-                // Keep the current type/category selection for convenience
                 
             } catch (error) {
                 console.error("Error adding document: ", error);
+                showToast("Gagal menyimpan transaksi. Cek log konsol.", 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Simpan Transaksi';
@@ -423,8 +477,12 @@
                 const path = getTransactionPath(currentUserId);
                 const docRef = doc(db, path, id);
                 await deleteDoc(docRef);
+                
+                // TAMPILKAN TOAST SUKSES HAPUS
+                showToast("Transaksi berhasil dihapus.", 'info');
             } catch (error) {
                 console.error("Error deleting transaction: ", error);
+                showToast("Gagal menghapus transaksi. Cek log konsol.", 'error');
             }
         };
 
@@ -481,12 +539,12 @@
                 formData.forEach((value, key) => { data[key] = value; });
 
                 if (!data.amount || !data.category) {
-                    console.error("Jumlah dan Kategori wajib diisi.");
+                    showToast("Jumlah dan Kategori wajib diisi.", 'error'); // MENGGANTI ALERT
                     return; 
                 }
 
                 if (parseFloat(data.amount) <= 0) {
-                     console.error("Jumlah harus berupa angka positif.");
+                     showToast("Jumlah harus berupa angka positif.", 'error'); // MENGGANTI ALERT
                     return;
                 }
                 

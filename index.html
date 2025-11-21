@@ -13,7 +13,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f8ff; /* Light, airy background */
+            background-color: #f0f8ff; 
             /* Subtle theme background pattern */
             background-image: repeating-linear-gradient(45deg, #e0ffff 0, #e0ffff 1px, transparent 0, transparent 50%);
             background-size: 8px 8px;
@@ -23,11 +23,11 @@
             width: 6px;
         }
         #transaction-list::-webkit-scrollbar-thumb {
-            background: #a5f3fc; /* cyan-200 */
+            background: #a5f3fc; 
             border-radius: 3px;
         }
         #transaction-list::-webkit-scrollbar-thumb:hover {
-            background: #67e8f9; /* cyan-400 */
+            background: #67e8f9; 
         }
     </style>
 </head>
@@ -157,7 +157,7 @@
             doc, 
             onSnapshot, 
             serverTimestamp,
-            setDoc, // Import setDoc untuk menyimpan ringkasan
+            setDoc,
             setLogLevel
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
@@ -203,82 +203,100 @@
             return `artifacts/${appId}/users/${userId}/financial_transactions`;
         };
         
-        // Fungsi untuk mendapatkan path ke dokumen ringkasan keuangan
         const getSummaryPath = (userId) => {
             return `artifacts/${appId}/users/${userId}/financial_summary/summary_doc`;
         };
 
 
-        // --- FIREBASE INITIALIZATION & AUTHENTICATION ---
+        // --- FIREBASE INITIALIZATION & AUTHENTICATION (REVISED) ---
 
         const initializeFirebase = async () => {
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                setLogLevel('Debug'); // Enable Firestore logging
+                setLogLevel('Debug'); // Mengaktifkan logging
+                console.log("Langkah 1: Layanan Firebase diinisialisasi.");
 
-                // 1. Set up Auth State Listener
+                // 1. Set up Auth State Listener (Gerbang Utama untuk Data)
                 onAuthStateChanged(auth, (user) => {
+                    isAuthReady = true;
                     if (user) {
                         currentUserId = user.uid;
                         userIdDisplay.textContent = currentUserId;
+                        console.log("Langkah 3: Status Auth Dikonfirmasi. User ID:", currentUserId);
+                        // Mulai mendengarkan data HANYA setelah Auth siap dan user ID ada.
+                        listenToTransactions(currentUserId);
                     } else {
                         currentUserId = null;
-                        userIdDisplay.textContent = 'Anonim';
-                    }
-                    isAuthReady = true;
-                    // Start listening to data once auth is ready
-                    if (currentUserId) {
-                        listenToTransactions(currentUserId);
+                        userIdDisplay.textContent = 'Anonim (Sesi Baru)';
+                        console.log("Langkah 3: Status Auth Dikonfirmasi. User Anonim atau Gagal.");
+                        // Tampilkan status awal
+                        renderSummaryCards(0, 0, 0);
+                        renderTransactionList([]);
                     }
                 });
 
-                // 2. Initial Sign-in Attempt
+                // 2. Initial Sign-in Attempt (Memicu Listener di atas)
+                let userCredential = null;
+                console.log("Langkah 2: Mencoba Sign-in...");
+
                 if (initialAuthToken) {
                     try {
-                        await signInWithCustomToken(auth, initialAuthToken);
+                        userCredential = await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Sign-in Berhasil: Custom Token.");
                     } catch (error) {
-                        console.warn("Custom token sign-in failed, falling back to anonymous.", error);
-                        await signInAnonymously(auth);
+                        console.warn("Sign-in Gagal (Custom Token). Kembali ke Anonim.", error);
+                        userCredential = await signInAnonymously(auth);
+                        console.log("Sign-in Berhasil: Anonim.");
                     }
                 } else {
-                    await signInAnonymously(auth);
+                    userCredential = await signInAnonymously(auth);
+                    console.log("Sign-in Berhasil: Anonim.");
+                }
+
+                // Jika userCredential tersedia, perbarui display dengan ID-nya,
+                // namun onAuthStateChanged tetap yang menangani data.
+                if (userCredential && userCredential.user) {
+                    userIdDisplay.textContent = userCredential.user.uid;
                 }
 
             } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                isAuthReady = true; // Mark as ready even on failure
+                console.error("KRITIS: Inisialisasi Firebase gagal.", error);
+                userIdDisplay.textContent = 'Gagal Memuat ID';
+                isAuthReady = true; 
             }
         };
 
 
-        // --- REAL-TIME DATA PERSISTENCE FOR SUMMARY (FITUR BARU) ---
+        // --- REAL-TIME DATA PERSISTENCE FOR SUMMARY ---
 
         /**
          * Menyimpan ringkasan kalkulasi (Total Income, Total Expense, Balance)
          * ke Firestore secara otomatis.
          */
         const saveFinancialSummary = async (userId, income, expense, balance) => {
-            if (!db || !userId) return;
+            if (!db || !userId) {
+                console.warn("Peringatan: Tidak dapat menyimpan Ringkasan Keuangan. DB atau User ID tidak siap.");
+                return;
+            }
 
             try {
                 const docRef = doc(db, getSummaryPath(userId));
-                // setDoc dengan { merge: true } akan membuat atau memperbarui dokumen summary_doc
                 await setDoc(docRef, {
                     totalIncome: income,
                     totalExpense: expense,
                     currentBalance: balance,
-                    lastUpdated: serverTimestamp() // Catatan waktu pembaruan
+                    lastUpdated: serverTimestamp() 
                 }, { merge: true });
-                console.log("Ringkasan keuangan berhasil disimpan/diperbarui secara real-time.");
+                console.log("Ringkasan keuangan berhasil disimpan/diperbarui.");
             } catch (error) {
                 console.error("Gagal menyimpan ringkasan keuangan:", error);
             }
         };
 
 
-        // --- RENDER FUNCTIONS ---
+        // --- RENDER FUNCTIONS (No change needed here) ---
 
         const renderSummaryCards = (income, expense, balance) => {
             const cardsHtml = `
@@ -287,12 +305,11 @@
                 ${createSummaryCard('Total Pengeluaran', expense, 'expense')}
             `;
             summaryCards.innerHTML = cardsHtml;
-            lucide.createIcons(); // Re-render icons after DOM update
+            lucide.createIcons();
         };
 
         const createSummaryCard = (title, value, type) => {
             let icon = 'wallet';
-            // Len's Yellow/Amber Theme for Balance Card
             let colorClass = 'text-amber-700 bg-amber-200'; 
 
             if (type === 'income') {
@@ -327,7 +344,6 @@
 
             transactions.forEach(t => {
                 const isIncome = t.type === 'Income';
-                // Use a brighter shade for transactions
                 const colorClass = isIncome ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-500';
                 const textClass = isIncome ? 'text-green-700' : 'text-red-700';
                 const icon = isIncome ? 'trending-up' : 'trending-down';
@@ -363,20 +379,24 @@
                 transactionListContainer.appendChild(transactionItem);
             });
 
-            lucide.createIcons(); // Re-render icons
+            lucide.createIcons(); 
         };
 
         // --- DATA LOGIC (Firestore) ---
 
         const listenToTransactions = (userId) => {
-            if (!db || !userId) return;
+            if (!db || !userId) {
+                console.error("Gagal memulai listener transaksi: DB atau User ID tidak ada.");
+                return;
+            }
 
             loadingIndicator.classList.remove('hidden');
             const path = getTransactionPath(userId);
             const q = query(collection(db, path));
+            
+            console.log(`Memulai onSnapshot untuk path: ${path}`);
 
-            // onSnapshot provides real-time updates
-            onSnapshot(q, async (querySnapshot) => { // Dibuat async agar bisa memanggil fungsi async
+            onSnapshot(q, async (querySnapshot) => { 
                 const fetchedTransactions = [];
                 let totalIncome = 0;
                 let totalExpense = 0;
@@ -403,15 +423,16 @@
                 
                 const currentBalance = totalIncome - totalExpense;
 
-                // Sort by creation time (newest first)
                 fetchedTransactions.sort((a, b) => b.createdAt - a.createdAt);
                 
-                // 1. Update UI
+                // 1. Perbarui UI
                 renderSummaryCards(totalIncome, totalExpense, currentBalance);
                 renderTransactionList(fetchedTransactions);
                 loadingIndicator.classList.add('hidden');
+                console.log(`Transaksi dimuat: ${fetchedTransactions.length} item. Saldo: ${currentBalance}`);
 
-                // 2. Panggil fungsi simpan untuk menyimpan kalkulasi summary secara real-time
+
+                // 2. Simpan kalkulasi summary secara real-time ke Firestore
                 await saveFinancialSummary(currentUserId, totalIncome, totalExpense, currentBalance);
 
             }, (error) => {
@@ -422,7 +443,7 @@
 
         const addTransaction = async (data) => {
             if (!db || !currentUserId) {
-                console.error("Database or User ID not ready.");
+                console.error("Gagal menambahkan transaksi: DB atau User ID tidak siap.");
                 return;
             }
 
@@ -440,11 +461,11 @@
                     date: data.date,
                     createdAt: serverTimestamp(),
                 });
+                console.log("Transaksi berhasil ditambahkan.");
 
                 // Clear form fields
                 document.getElementById('amount').value = '';
                 document.getElementById('description').value = '';
-                // Keep the current type/category selection for convenience
                 
             } catch (error) {
                 console.error("Error adding document: ", error);
@@ -461,6 +482,7 @@
                 const path = getTransactionPath(currentUserId);
                 const docRef = doc(db, path, id);
                 await deleteDoc(docRef);
+                console.log(`Transaksi ID ${id} berhasil dihapus.`);
             } catch (error) {
                 console.error("Error deleting transaction: ", error);
             }
@@ -498,13 +520,10 @@
         // --- SETUP LISTENERS ---
 
         window.onload = () => {
-            // Set default date to today
             document.getElementById('date').value = new Date().toISOString().split('T')[0];
             
-            // Initial category population
             handleTypeChange(transactionTypeInput.value); 
 
-            // Initialize Firebase and start listening for auth state
             initializeFirebase();
 
             // Type Button Listeners
@@ -519,12 +538,12 @@
                 formData.forEach((value, key) => { data[key] = value; });
 
                 if (!data.amount || !data.category) {
-                    console.error("Jumlah dan Kategori wajib diisi.");
+                    console.error("Peringatan: Jumlah dan Kategori wajib diisi.");
                     return; 
                 }
 
                 if (parseFloat(data.amount) <= 0) {
-                     console.error("Jumlah harus berupa angka positif.");
+                     console.error("Peringatan: Jumlah harus berupa angka positif.");
                     return;
                 }
                 

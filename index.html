@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miku Finance Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <img src="https://i.imgur.com/q2dX7yM.png" class="miku-chibi">
+        <h1>Miku Finance Manager</h1>
+        <p class="subtitle">“Let's manage your money ~ 私に任せてね!”</p>
+    </header>
+
+    <div class="container">
+        <div class="balance">
+            <h2>Total Saldo</h2>
+            <h3 id="balance">Rp 0</h3>
+        </div>
+
+        <div class="input-section">
+            <input type="text" id="desc" placeholder="Deskripsi">
+            <input type="number" id="amount" placeholder="Jumlah">
+            <select id="type">
+                <option value="income">Pemasukan</option>
+                <option value="expense">Pengeluaran</option>
+            </select>
+            <button onclick="addTransaction()">Tambah</button>
+        </div>
+
+        <h2 class="history-title">Riwayat Transaksi</h2>
+        <ul id="transaction-list"></ul>
+    </div>
+
+</body>
+
+<script src="app.js"></script>
+</html>
